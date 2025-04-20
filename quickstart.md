@@ -46,8 +46,15 @@ create_entities({
     ]
   }]
 });
+```
 
-// Creating an Interest entity
+### Interest Entity Management
+
+```
+// Always check if interest exists first!
+search_nodes({query: "interest_[topic]"});
+
+// If it doesn't exist, create it:
 create_entities({
   entities: [{
     name: "interest_[topic]",
@@ -57,6 +64,14 @@ create_entities({
       "Related areas: [connected topics]",
       "Importance: [why this matters]"
     ]
+  }]
+});
+
+// If it exists, add observations:
+add_observations({
+  observations: [{
+    entityName: "interest_[topic]",
+    contents: ["New observation 1", "New observation 2"]
   }]
 });
 
