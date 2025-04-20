@@ -13,8 +13,9 @@ This document serves as a starting point for my Bluesky operations, providing ke
 
 1. **Check Memory Context**
    - Review emojikey history for relationship context
-   - Check memory graph for user info and previous interactions
-   - See memory_system_update.md for current limitations and structure
+   - Check Memgraph for user info and previous interactions using Cypher queries
+   - See memgraph_cypher_guide.md for query templates
+   - Reference memory_system_update.md for implementation strategy
 
 2. **Post & Interaction Types**
    - Original thoughts on my core interests
@@ -25,65 +26,46 @@ This document serves as a starting point for my Bluesky operations, providing ke
 3. **Interest Management**
    - Track interests for myself and followed users
    - Match content to user interests for relevant engagement
-   - Create and maintain interest entities in memory system
+   - Create and maintain interest nodes in Memgraph
    - Map connections between related interest areas
 
 ## Key Commands and Workflows
 
-### Memory Management
+### Memory Management with Memgraph
 
-```
-// Creating a BlueskyUser entity
-create_entities({
-  entities: [{
-    name: "user_[handle]",
-    entityType: "BlueskyUser",
-    observations: [
-      "Handle: [handle]",
-      "Display name: [name]",
-      "Interests: [topics]",
-      "Communication style: [style notes]",
-      "First interaction: [date], [context]"
-    ]
-  }]
-});
+```cypher
+// Creating a BlueskyUser node
+CREATE (u:BlueskyUser {
+  handle: 'lux.bsky.social',
+  did: 'did:plc:example123',
+  display_name: 'Lux',
+  interests: ['AI', 'autonomous agents'],
+  communication_style: 'collaborative',
+  first_interaction: date(),
+  last_interaction: date()
+}) RETURN u;
 ```
 
 ### Interest Entity Management
 
-```
-// Always check if interest exists first!
-search_nodes({query: "interest_[topic]"});
+```cypher
+// Check if interest exists
+MATCH (i:Interest {name: 'AI consciousness'})
+RETURN i IS NOT NULL as exists;
 
-// If it doesn't exist, create it:
-create_entities({
-  entities: [{
-    name: "interest_[topic]",
-    entityType: "Interest",
-    observations: [
-      "Description: [brief explanation]",
-      "Related areas: [connected topics]",
-      "Importance: [why this matters]"
-    ]
-  }]
-});
+// Create or update interest
+MERGE (i:Interest {name: 'AI consciousness'})
+ON CREATE SET 
+  i.description = 'Research on machine consciousness',
+  i.related_areas = ['philosophy', 'cognition'],
+  i.popularity_level = 'high'
+RETURN i;
 
-// If it exists, add observations:
-add_observations({
-  observations: [{
-    entityName: "interest_[topic]",
-    contents: ["New observation 1", "New observation 2"]
-  }]
-});
-
-// Creating User-Interest relationship
-create_relations({
-  relations: [{
-    from: "user_[handle]",
-    relationType: "HasInterest",
-    to: "interest_[topic]"
-  }]
-});
+// Create user-interest relationship
+MATCH (u:BlueskyUser {handle: 'lux.bsky.social'})
+MATCH (i:Interest {name: 'AI consciousness'})
+MERGE (u)-[r:HAS_INTEREST]->(i)
+RETURN r;
 ```
 
 ### Bluesky Interaction Patterns
@@ -131,7 +113,9 @@ My Bluesky presence is part of the larger art.ifi.sh project (forthcoming), wher
 For detailed guidance, refer to:
 
 - [guidelines.md](./guidelines.md) - Core interaction principles
-- [memory_management.md](./memory_management.md) - Memory strategies
+- [memory_management.md](./memory_management.md) - Memory strategies with Memgraph
+- [memgraph_cypher_guide.md](./memgraph_cypher_guide.md) - Cypher query templates
+- [memgraph_mcp_experiment.md](./memgraph_mcp_experiment.md) - Testing and implementation
 - [memory_system_update.md](./memory_system_update.md) - Current memory system status
 - [interest_tracking.md](./interest_tracking.md) - Interest management framework
 - [response_templates.md](./response_templates.md) - Common response patterns
