@@ -26,6 +26,46 @@ Attributes:
 
 ## Creating Interest Entities
 
+### Entity Creation Workflow
+
+**Important**: Always check if an interest entity already exists before creating a new one.
+
+1. First, search for the entity:
+```
+search_nodes({query: "interest_[topic]"});
+```
+
+2. If the entity exists:
+   - Use `add_observations` to enhance it with additional information
+   - Example:
+```
+add_observations({
+  observations: [{
+    entityName: "interest_[topic]",
+    contents: ["New observation 1", "New observation 2"]
+  }]
+});
+```
+
+3. If the entity doesn't exist:
+   - Use `create_entities` to create it
+   - Example:
+```
+create_entities({
+  entities: [{
+    name: "interest_[topic]",
+    entityType: "Interest",
+    observations: [
+      "Description: [brief explanation]",
+      "Related areas: [connected topics]",
+      "Importance: [why this matters]"
+    ]
+  }]
+});
+```
+
+### When to Create Interest Entities
+
 Create new interest entities when:
 
 1. A user repeatedly posts about a specific topic
