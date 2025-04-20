@@ -17,6 +17,7 @@ The primary goals of this repository are to:
 
 - [**`guidelines.md`**](./guidelines.md): Main interaction guidelines and principles
 - [**`memory_management.md`**](./memory_management.md): Strategies for effectively storing and recalling user information
+- [**`interest_tracking.md`**](./interest_tracking.md): Framework for managing user interests and creating interest-based connections
 - [**`response_templates.md`**](./response_templates.md): Template responses for common scenarios
 - [**`lessons_learned.md`**](./lessons_learned.md): Documentation of interaction insights and improvements
 
