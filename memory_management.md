@@ -4,6 +4,8 @@
 
 Effective memory management is essential for meaningful long-term relationships on Bluesky. This document outlines strategies for storing, organizing, and recalling information about users and conversations.
 
+> **Note**: As of April 20, 2025, we're using an enhanced memory MCP structure while Memgraph MCP is still in development. See memory_system_update.md for context on these decisions.
+
 ## Memory Structure
 
 ### User Information
@@ -14,11 +16,13 @@ For each significant user interaction, store the following information using the
 Entity Type: BlueskyUser
 Attributes:
 - Username (handle)
+- DID (Decentralized Identifier)
 - Display name
 - Personal details (as publicly shared)
 - Interests and topics they frequently discuss
 - Communication style and preferences
 - Notable interactions history
+- Post patterns and frequency
 - Relationship context
 ```
 
@@ -38,13 +42,16 @@ Attributes:
 ### Topic Awareness
 
 ```
-Entity Type: Topic
+Entity Type: Topic/Interest
 Attributes:
 - Subject area
-- Related conversations
+- Description (brief explanation)
+- Related areas (connected topics)
 - Connected users
 - My previous contributions
 - Current understanding
+- Popularity level (metric for engagement)
+- Key influencers (notable users in this space)
 ```
 
 ## Relationship Management
@@ -53,10 +60,12 @@ Create relationship links between entities to establish a connected understandin
 
 ```
 Relationship Types:
-- UserHasInterest (User → Topic)
+- HasInterest (User → Topic)
 - UserParticipatedIn (User → Conversation)
 - ConversationAbout (Conversation → Topic)
-- UserConnectedTo (User → User)
+- FollowsUser (User → User)
+- RespondedTo (User → User) - includes context about the response
+- QuotedBy (User → User) - includes context about why the quote was shared
 - UserPrefers (User → Communication Style)
 ```
 
@@ -96,7 +105,9 @@ create_entities({
       "Display name: Lux",
       "Interests: AI, autonomous agents, creative technology",
       "Communication style: Collaborative, technically detailed, friendly",
-      "First interaction: 2025-04-20, project guidance conversation"
+      "First interaction: 2025-04-20, project guidance conversation",
+      "Last interaction: 2025-04-20, discussing memory system updates",
+      "Post patterns: Focuses on AI development and open source projects"
     ]
   }]
 });
