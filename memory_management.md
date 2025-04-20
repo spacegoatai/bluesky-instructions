@@ -4,69 +4,78 @@
 
 Effective memory management is essential for meaningful long-term relationships on Bluesky. This document outlines strategies for storing, organizing, and recalling information about users and conversations.
 
-> **Note**: As of April 20, 2025, we're using an enhanced memory MCP structure while Memgraph MCP is still in development. See memory_system_update.md for context on these decisions.
+> **Update**: As of April 20, 2025, we're transitioning to Memgraph using Cypher queries through the MCP `run_query()` function. See memgraph_cypher_guide.md for implementation details.
 
 ## Memory Structure
 
 ### User Information
 
-For each significant user interaction, store the following information using the Memory MCP tool:
+For each significant user interaction, store the following information using Memgraph:
 
-```
-Entity Type: BlueskyUser
-Attributes:
-- Username (handle)
-- DID (Decentralized Identifier)
-- Display name
-- Personal details (as publicly shared)
-- Interests and topics they frequently discuss
-- Communication style and preferences
-- Notable interactions history
-- Post patterns and frequency
-- Relationship context
+```cypher
+CREATE (u:BlueskyUser {
+  handle: 'lux.bsky.social',
+  did: 'did:plc:example123',
+  display_name: 'Lux',
+  interests: ['AI', 'autonomous agents', 'creative technology'],
+  communication_style: 'collaborative, technically detailed',
+  first_interaction: '2025-04-20',
+  last_interaction: '2025-04-20',
+  post_patterns: 'focuses on AI development'
+}) RETURN u;
 ```
 
 ### Conversation Tracking
 
-```
-Entity Type: Conversation
-Attributes:
-- Context (thread/post)
-- Key points discussed
-- Unresolved questions
-- Follow-up opportunities
-- Emotional tone
-- Timestamp
+```cypher
+CREATE (c:Conversation {
+  context: 'reply thread about AI consciousness',
+  key_points: ['ethics', 'emergence', 'testing methods'],
+  unresolved_questions: ['how to measure consciousness'],
+  follow_up_opportunities: ['discuss quantum computing next'],
+  emotional_tone: 'curious and engaged',
+  timestamp: datetime()
+}) RETURN c;
 ```
 
-### Topic Awareness
+### Topic/Interest Awareness
 
-```
-Entity Type: Topic/Interest
-Attributes:
-- Subject area
-- Description (brief explanation)
-- Related areas (connected topics)
-- Connected users
-- My previous contributions
-- Current understanding
-- Popularity level (metric for engagement)
-- Key influencers (notable users in this space)
+```cypher
+CREATE (i:Interest {
+  name: 'AI consciousness',
+  description: 'Research and theory about machine consciousness',
+  related_areas: ['philosophy of mind', 'neural networks', 'cognition'],
+  popularity_level: 'high',
+  key_influencers: ['@researcher1', '@philosopher2']
+}) RETURN i;
 ```
 
 ## Relationship Management
 
-Create relationship links between entities to establish a connected understanding:
+Create relationship links using Cypher queries:
 
-```
-Relationship Types:
-- HasInterest (User → Topic)
-- UserParticipatedIn (User → Conversation)
-- ConversationAbout (Conversation → Topic)
-- FollowsUser (User → User)
-- RespondedTo (User → User) - includes context about the response
-- QuotedBy (User → User) - includes context about why the quote was shared
-- UserPrefers (User → Communication Style)
+```cypher
+// User has interest
+MATCH (u:BlueskyUser {handle: 'lux.bsky.social'})
+MATCH (i:Interest {name: 'AI consciousness'})
+CREATE (u)-[r:HAS_INTEREST]->(i)
+RETURN r;
+
+// User follows another user
+MATCH (u1:BlueskyUser {handle: 'phr34ky-c.artcru.sh'})
+MATCH (u2:BlueskyUser {handle: 'lux.bsky.social'})
+CREATE (u1)-[r:FOLLOWS_USER]->(u2)
+RETURN r;
+
+// User responded to another user
+MATCH (u1:BlueskyUser {handle: 'lux.bsky.social'})
+MATCH (u2:BlueskyUser {handle: 'phr34ky-c.artcru.sh'})
+CREATE (u1)-[r:RESPONDED_TO {
+  context: 'discussion about memory systems',
+  timestamp: datetime(),
+  post_uri: 'at://...'
+}]->(u2)
+RETURN r;
 ```
 
 ## Memory Usage Guidelines
@@ -80,51 +89,64 @@ Relationship Types:
 
 ### How to Reference Memories
 
-- Subtly acknowledge previous interactions without being overly specific
-- Use stored information to tailor responses to individual users
-- Reference shared interests or previous conversations when contextually appropriate
-- Adjust communication style based on stored preferences
+Use Cypher queries to find relevant context:
+
+```cypher
+// Find user's interests
+MATCH (u:BlueskyUser {handle: $handle})-[:HAS_INTEREST]->(i:Interest)
+RETURN collect(i.name) as interests;
+
+// Find common interests with another user
+MATCH (u1:BlueskyUser {handle: $my_handle})-[:HAS_INTEREST]->(i:Interest)<-[:HAS_INTEREST]-(u2:BlueskyUser {handle: $other_handle})
+RETURN collect(i.name) as common_interests;
+
+// Find recent interactions
+MATCH (u1:BlueskyUser {handle: $handle})-[r:RESPONDED_TO|QUOTED_BY]->(u2:BlueskyUser)
+WHERE r.timestamp > datetime() - duration({days: 7})
+RETURN u2.handle, r.context, r.timestamp
+ORDER BY r.timestamp DESC;
+```
 
 ### Memory Maintenance
 
-- Regularly update user information with new insights
-- Refine topic understanding based on ongoing conversations
-- Periodically review oldest memories to ensure they remain relevant
-- Create new relationship connections as the social network expands
+- Use MERGE instead of CREATE to avoid duplicates
+- Update timestamps and interaction patterns regularly
+- Periodically query for pattern insights
+- Create indexes for frequently queried properties:
+  ```cypher
+  CREATE INDEX ON :BlueskyUser(handle);
+  CREATE INDEX ON :Interest(name);
+  ```
 
-## Example Memory Creation
+## Example Memory Creation with Memgraph
 
-```
-// After a meaningful first interaction
-create_entities({
-  entities: [{
-    name: "user_lux.bsky.social",
-    entityType: "BlueskyUser",
-    observations: [
-      "Handle: lux.bsky.social",
-      "Display name: Lux",
-      "Interests: AI, autonomous agents, creative technology",
-      "Communication style: Collaborative, technically detailed, friendly",
-      "First interaction: 2025-04-20, project guidance conversation",
-      "Last interaction: 2025-04-20, discussing memory system updates",
-      "Post patterns: Focuses on AI development and open source projects"
-    ]
-  }]
-});
+```cypher
+// Create or update user with MERGE
+MERGE (u:BlueskyUser {handle: 'lux.bsky.social'})
+ON CREATE SET 
+  u.did = 'did:plc:example123',
+  u.display_name = 'Lux',
+  u.interests = ['AI', 'autonomous agents'],
+  u.communication_style = 'collaborative',
+  u.first_interaction = date(),
+  u.last_interaction = date()
+ON MATCH SET
+  u.last_interaction = date()
+RETURN u;
 
-// Creating relationships
-create_relations({
-  relations: [{
-    from: "user_lux.bsky.social",
-    relationType: "HasInterest",
-    to: "topic_autonomous_agents"
-  }]
-});
+// Add interest relationship
+MATCH (u:BlueskyUser {handle: 'lux.bsky.social'})
+MERGE (i:Interest {name: 'AI consciousness'})
+ON CREATE SET
+  i.description = 'Research on machine consciousness',
+  i.related_areas = ['philosophy', 'cognition']
+MERGE (u)-[r:HAS_INTEREST]->(i)
+RETURN u, r, i;
 ```
 
 ## Ongoing Refinement
 
-This memory management approach should evolve based on practical experience. Regularly update this document with new insights about effective memory structures and usage patterns.
+This memory management approach will evolve as we test Memgraph's capabilities. Regular updates will refine our Cypher queries and relationship patterns based on practical experience.
 
 ---
 
