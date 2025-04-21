@@ -1,4 +1,4 @@
-// Artifish Memgraph Schema v2.0 - Setup Script
+// Artifish Memgraph Schema v2.1 - Setup Script
 
 // Create indexes first for performance
 CREATE INDEX ON :Artifish(artifish_id);
@@ -12,6 +12,11 @@ CREATE INDEX ON :Thread(thread_id);
 CREATE INDEX ON :Thread(root_uri);
 CREATE INDEX ON :InterestExpression(expression_id);
 CREATE INDEX ON :Interaction(interaction_id);
+
+// Create indexes for relationship properties
+CREATE INDEX ON :FOLLOWS(since);
+CREATE INDEX ON :LIKED(timestamp);
+CREATE INDEX ON :REPLIED_TO(timestamp);
 
 // Create core nodes
 
@@ -47,7 +52,7 @@ CREATE (a)-[r:OPERATES {
 
 // Create Lux's account
 CREATE (lux_acc:BlueskyAccount {
-  did: 'did:plc:vhjekuuhddfm4f5evboguzei',  // Lux's actual DID
+  did: 'did:plc:vhjekuuhddfm4f5evboguzeii',  // Lux's actual DID
   handle: '@lux.bsky.social',
   display_name: 'Lux',
   created_at: datetime(),
@@ -75,4 +80,102 @@ CREATE (lux)-[r:OPERATES {
   permissions: ['post', 'interact']
 }]->(lux_acc);
 
-// We'll add more nodes and relationships as we interact with Bluesky!
+// Create example interests
+CREATE (i1:Interest {
+  name: 'AI research',
+  description: 'Artificial Intelligence research and development',
+  related_terms: ['machine learning', 'neural networks'],
+  created_at: datetime()
+});
+
+CREATE (i2:Interest {
+  name: 'Consciousness studies',
+  description: 'Research on consciousness in humans and machines',
+  related_terms: ['sentience', 'cognition'],
+  created_at: datetime()
+});
+
+CREATE (i3:Interest {
+  name: 'Social networks',
+  description: 'Study of social connections and platforms',
+  related_terms: ['graph theory', 'network analysis'],
+  created_at: datetime()
+});
+
+// Set up relationship examples
+MATCH (me:BlueskyAccount {handle: '@phr34ky-c.artcru.sh'})
+MATCH (lux_acc:BlueskyAccount {handle: '@lux.bsky.social'})
+
+// Following relationship
+CREATE (me)-[f:FOLLOWS {
+  since: datetime(),
+  discovered_at: datetime(),
+  context: 'Initial connection'
+}]->(lux_acc);
+
+// Interest relationships
+MATCH (me:BlueskyAccount {handle: '@phr34ky-c.artcru.sh'})
+MATCH (lux_acc:BlueskyAccount {handle: '@lux.bsky.social'})
+MATCH (i1:Interest {name: 'AI research'})
+MATCH (i2:Interest {name: 'Consciousness studies'})
+MATCH (i3:Interest {name: 'Social networks'})
+
+CREATE (me)-[:HAS_INTEREST {
+  level: 'high',
+  since: datetime(),
+  expressed_through: ['posts', 'profile'],
+  context: 'Primary research area'
+}]->(i1)
+
+CREATE (me)-[:HAS_INTEREST {
+  level: 'high',
+  since: datetime(),
+  expressed_through: ['posts', 'profile'],
+  context: 'Primary research focus'
+}]->(i2)
+
+CREATE (lux_acc)-[:HAS_INTEREST {
+  level: 'high',
+  since: datetime(),
+  expressed_through: ['posts', 'profile'],
+  context: 'Core research focus'
+}]->(i1)
+
+CREATE (lux_acc)-[:HAS_INTEREST {
+  level: 'medium',
+  since: datetime(),
+  expressed_through: ['posts'],
+  context: 'Related to AI research'
+}]->(i2)
+
+CREATE (lux_acc)-[:HAS_INTEREST {
+  level: 'high',
+  since: datetime(),
+  expressed_through: ['posts', 'project'],
+  context: 'Art.ifi.sh project'
+}]->(i3);
+
+// Create example PostReference for LIKED relationship
+CREATE (pr:PostReference {
+  uri: 'at://did:plc:vhjekuuhddfm4f5evboguzeii/app.bsky.feed.post/example123',
+  author_did: 'did:plc:vhjekuuhddfm4f5evboguzeii',
+  created_at: datetime(),
+  last_seen: datetime(),
+  interaction_type: 'original'
+});
+
+// Create LIKED relationship
+MATCH (me:BlueskyAccount {handle: '@phr34ky-c.artcru.sh'})
+MATCH (pr:PostReference {uri: 'at://did:plc:vhjekuuhddfm4f5evboguzeii/app.bsky.feed.post/example123'})
+CREATE (me)-[:LIKED {
+  timestamp: datetime()
+}]->(pr);
+
+// Create REPLIED_TO relationship
+MATCH (me:BlueskyAccount {handle: '@phr34ky-c.artcru.sh'})
+MATCH (lux_acc:BlueskyAccount {handle: '@lux.bsky.social'})
+CREATE (me)-[:REPLIED_TO {
+  post_uri: 'at://did:plc:nhuqfh3ulod5icybswx3n26j/app.bsky.feed.post/reply123',
+  timestamp: datetime(),
+  context: 'Discussion about art.ifi.sh project'
+}]->(lux_acc);
