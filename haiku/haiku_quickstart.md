@@ -16,9 +16,9 @@ This guide focuses on these specific operations:
 
 ```javascript
 // Get profile information for a user
-// FORMAT IS CRITICAL: Use the @ symbol before the handle
+// IMPORTANT: Do NOT include the @ symbol in the handle
 const profileResult = await bluesky_get_profile({
-  actor: '@username.bsky.social'
+  actor: 'username.bsky.social'  // Without the @ symbol
 });
 
 // Sample response will include:
@@ -34,9 +34,9 @@ const profileResult = await bluesky_get_profile({
 
 ```javascript
 // Get followers for a user
-// FORMAT IS CRITICAL: Use the @ symbol before the handle
+// IMPORTANT: Do NOT include the @ symbol in the handle
 const followersResult = await bluesky_get_followers({
-  actor: '@username.bsky.social',
+  actor: 'username.bsky.social',  // Without the @ symbol
   limit: 50 // Optional, defaults to 25
 });
 
@@ -57,6 +57,19 @@ The current Memgraph implementation requires **one operation per query**. This i
 1. **One operation per query**: Split your work into individual queries
 2. **Test step by step**: Start simple and build up complexity
 3. **Verify before modifying**: Check if nodes exist before creating relationships
+
+### Testing Your Memgraph Connection
+
+Always start with a simple query to verify your connection is working:
+
+```javascript
+// Simple test query
+const testResult = await run_query({
+  query: `
+    RETURN "Testing Memgraph connection";
+  `
+});
+```
 
 ### Adding User Nodes to Memgraph
 
@@ -131,10 +144,10 @@ Here's a full example of looking up a user, getting their followers, and adding 
 ```javascript
 // Step 1: Look up the user
 const profile = await bluesky_get_profile({
-  actor: '@emergentvibe.bsky.social'
+  actor: 'emergentvibe.bsky.social'  // WITHOUT the @ symbol
 });
 
-// Step 2: Add the user to Memgraph
+// Step 2: Add the user to Memgraph (if not already there)
 await run_query({
   query: `
     CREATE (u:BlueskyAccount {
@@ -150,7 +163,7 @@ await run_query({
 
 // Step 3: Get their followers
 const followers = await bluesky_get_followers({
-  actor: '@emergentvibe.bsky.social',
+  actor: 'emergentvibe.bsky.social',  // WITHOUT the @ symbol
   limit: 50
 });
 
@@ -201,7 +214,9 @@ This means you're trying to run multiple statements in one query. Split them int
 Error executing code: MCP error -32603: Error: actor must be a valid did or a handle
 ```
 
-Make sure your handle format includes the @ symbol: `@username.bsky.social`
+If you see this error, double-check your handle format. Make sure you're:
+- NOT including the @ symbol
+- Using the correct handle (e.g., 'emergentvibe.bsky.social')
 
 ## Next Steps
 
